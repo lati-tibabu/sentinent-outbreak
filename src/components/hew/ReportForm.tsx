@@ -1,4 +1,3 @@
-
 "use client";
 import { useState, type FormEvent, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -74,6 +73,7 @@ export function ReportForm({ onReportSubmit }: ReportFormProps) {
       patientGender: patientGender as Report['patientGender'] || undefined,
       location,
       region: region || undefined,
+      isAnonymous: false, // HEW reports are not anonymous
     };
     
     // Simulate submission delay
@@ -178,6 +178,7 @@ export function ReportForm({ onReportSubmit }: ReportFormProps) {
                 {GENDERS.map((g) => (
                   <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
                 ))}
+                <SelectItem value="">Prefer not to say</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -200,4 +201,3 @@ export function ReportForm({ onReportSubmit }: ReportFormProps) {
     </Card>
   );
 }
-

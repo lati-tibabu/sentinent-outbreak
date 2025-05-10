@@ -1,6 +1,6 @@
-
 "use client";
 import { useState, type FormEvent } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { UserRole } from '@/lib/types';
-import { LogIn } from 'lucide-react';
+import { LogIn, ShieldQuestion } from 'lucide-react';
 
 export function LoginForm() {
   const [username, setUsername] = useState('');
@@ -69,6 +69,12 @@ export function LoginForm() {
               <LogIn className="mr-2 h-5 w-5" /> Login
             </Button>
           </form>
+          <div className="mt-6 text-center">
+            <Link href="/report/anonymous" className="text-sm text-primary hover:underline inline-flex items-center gap-1.5">
+              <ShieldQuestion size={16} />
+              Submit an Anonymous Community Report
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>

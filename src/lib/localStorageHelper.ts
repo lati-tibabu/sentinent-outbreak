@@ -57,6 +57,7 @@ export const loadSampleReports = (): Report[] => {
       patientGender: 'male',
       location: { latitude: 9.03, longitude: 38.74 }, // Addis Ababa approx
       region: 'Addis Ababa',
+      isAnonymous: false,
     },
     {
       id: 'sample-2',
@@ -68,6 +69,7 @@ export const loadSampleReports = (): Report[] => {
       patientGender: 'female',
       location: { latitude: 13.49, longitude: 39.47 }, // Mekelle approx
       region: 'Tigray',
+      isAnonymous: false,
     },
     {
       id: 'sample-3',
@@ -76,6 +78,16 @@ export const loadSampleReports = (): Report[] => {
       suspectedDisease: 'Pneumonia',
       location: null, // No GPS
       region: 'Oromia',
+      isAnonymous: false,
+    },
+     {
+      id: 'sample-4-anon',
+      timestamp: Date.now() - 86400000 * 0.5, // 12 hours ago
+      symptoms: 'Unexplained rash, mild fever',
+      suspectedDisease: 'Other',
+      location: null, 
+      region: 'Amhara',
+      isAnonymous: true,
     },
   ];
   storeReports(sampleReports);

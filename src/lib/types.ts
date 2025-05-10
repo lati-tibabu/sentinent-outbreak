@@ -20,4 +20,5 @@ export interface Report {
   } | null;
   region?: string; // e.g., 'Addis Ababa', 'Tigray', etc.
   // imageUrl?: string; // For simplicity, not storing actual image data
+  isAnonymous?: boolean;
 }
