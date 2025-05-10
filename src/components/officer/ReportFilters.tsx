@@ -21,6 +21,9 @@ interface ReportFiltersProps {
   setFilters: Dispatch<SetStateAction<ReportFiltersState>>;
 }
 
+const ALL_REGIONS_VALUE = "__ALL_REGIONS__";
+const ALL_DISEASES_VALUE = "__ALL_DISEASES__";
+
 export function ReportFilters({ filters, setFilters }: ReportFiltersProps) {
   const handleResetFilters = () => {
     setFilters({ region: '', disease: '', date: undefined });
@@ -31,12 +34,15 @@ export function ReportFilters({ filters, setFilters }: ReportFiltersProps) {
       <div className="flex flex-wrap items-end gap-4">
         <div className="flex-grow min-w-[150px]">
           <label htmlFor="region-filter" className="block text-sm font-medium text-muted-foreground mb-1">Region</label>
-          <Select value={filters.region} onValueChange={(value) => setFilters(prev => ({ ...prev, region: value }))}>
+          <Select 
+            value={filters.region || ALL_REGIONS_VALUE} 
+            onValueChange={(value) => setFilters(prev => ({ ...prev, region: value === ALL_REGIONS_VALUE ? "" : value }))}
+          >
             <SelectTrigger id="region-filter">
               <SelectValue placeholder="All Regions" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Regions</SelectItem>
+              <SelectItem value={ALL_REGIONS_VALUE}>All Regions</SelectItem>
               {ETHIOPIAN_REGIONS.map(region => (
                 <SelectItem key={region} value={region}>{region}</SelectItem>
               ))}
@@ -46,12 +52,15 @@ export function ReportFilters({ filters, setFilters }: ReportFiltersProps) {
 
         <div className="flex-grow min-w-[150px]">
           <label htmlFor="disease-filter" className="block text-sm font-medium text-muted-foreground mb-1">Disease</label>
-          <Select value={filters.disease} onValueChange={(value) => setFilters(prev => ({ ...prev, disease: value }))}>
+          <Select 
+            value={filters.disease || ALL_DISEASES_VALUE} 
+            onValueChange={(value) => setFilters(prev => ({ ...prev, disease: value === ALL_DISEASES_VALUE ? "" : value }))}
+          >
             <SelectTrigger id="disease-filter">
               <SelectValue placeholder="All Diseases" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Diseases</SelectItem>
+              <SelectItem value={ALL_DISEASES_VALUE}>All Diseases</SelectItem>
               {COMMON_DISEASES.map(disease => (
                 <SelectItem key={disease} value={disease}>{disease}</SelectItem>
               ))}
@@ -93,3 +102,4 @@ export function ReportFilters({ filters, setFilters }: ReportFiltersProps) {
     </div>
   );
 }
+
