@@ -40,8 +40,8 @@ export function ReportForm({ onReportSubmit }: ReportFormProps) {
           setIsFetchingLocation(false);
           toast({ title: "Location Acquired", description: `Lat: ${position.coords.latitude.toFixed(4)}, Lon: ${position.coords.longitude.toFixed(4)}` });
         },
-        (error) => {
-          console.error("Error getting location: ", error);
+        (error: GeolocationPositionError) => {
+          console.error("Error getting location: ", error.message, " (Code: ", error.code, ")");
           toast({ title: "Location Error", description: "Could not get GPS location. Please select region manually.", variant: "destructive" });
           setIsFetchingLocation(false);
         }
@@ -115,7 +115,7 @@ export function ReportForm({ onReportSubmit }: ReportFormProps) {
           </div>
           <div>
             <Label htmlFor="suspectedDisease">Suspected Disease *</Label>
-            <Select value={suspectedDisease} onValueChange={setSuspectedDisease}>
+            <Select value={suspectedDisease} onValueChange={setSuspectedDisease} required>
               <SelectTrigger id="suspectedDisease">
                 <SelectValue placeholder="Select disease..." />
               </SelectTrigger>
@@ -200,3 +200,4 @@ export function ReportForm({ onReportSubmit }: ReportFormProps) {
     </Card>
   );
 }
+
