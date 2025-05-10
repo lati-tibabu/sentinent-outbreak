@@ -1,3 +1,4 @@
+
 export type UserRole = 'hew' | 'officer';
 
 export interface User {
@@ -13,7 +14,7 @@ export interface Report {
   suspectedDisease: string;
   patientName?: string;
   patientAge?: number;
-  patientGender?: 'male' | 'female' | 'other' | '';
+  patientGender?: 'male' | 'female' | 'other' | 'not_specified';
   location: {
     latitude: number;
     longitude: number;
