@@ -1,3 +1,4 @@
+
 "use client";
 import { useState, type FormEvent, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -70,7 +71,7 @@ export function ReportForm({ onReportSubmit }: ReportFormProps) {
       suspectedDisease,
       patientName: patientName || undefined,
       patientAge: patientAge ? Number(patientAge) : undefined,
-      patientGender: patientGender as Report['patientGender'] || undefined,
+      patientGender: patientGender && patientGender !== "not_specified" ? (patientGender as Report['patientGender']) : undefined,
       location,
       region: region || undefined,
       isAnonymous: false, // HEW reports are not anonymous
@@ -178,7 +179,7 @@ export function ReportForm({ onReportSubmit }: ReportFormProps) {
                 {GENDERS.map((g) => (
                   <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
                 ))}
-                <SelectItem value="">Prefer not to say</SelectItem>
+                <SelectItem value="not_specified">Prefer not to say</SelectItem>
               </SelectContent>
             </Select>
           </div>
