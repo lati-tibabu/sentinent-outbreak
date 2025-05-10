@@ -2,51 +2,94 @@
 "use client";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { DatabaseZap, Trash2, Settings } from 'lucide-react';
+import { DatabaseZap, Trash2, Settings, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Report } from '@/lib/types';
-import { clearStoredReports, loadSampleReports } from '@/lib/localStorageHelper';
+import { getSampleReportsArray } from '@/lib/localStorageHelper'; // Renamed and modified function
+import { useState } from 'react';
 
 interface AdminSettingsSectionProps {
-  setReports: (reports: Report[] | ((prevReports: Report[]) => Report[])) => void;
+  onDataChange: () => void; // Callback to re-fetch reports on OfficerPage
 }
 
-export function AdminSettingsSection({ setReports }: AdminSettingsSectionProps) {
+export function AdminSettingsSection({ onDataChange }: AdminSettingsSectionProps) {
   const { toast } = useToast();
+  const [isClearing, setIsClearing] = useState(false);
+  const [isLoadingSamples, setIsLoadingSamples] = useState(false);
 
-  const handleClearReports = () => {
-    if (window.confirm("Are you sure you want to delete all locally stored reports? This action cannot be undone.")) {
-      clearStoredReports();
-      setReports([]);
-      toast({ title: "Data Cleared", description: "All local reports have been deleted." });
+  const handleClearReports = async () => {
+    if (window.confirm("Are you sure you want to delete ALL reports from the database? This action cannot be undone.")) {
+      setIsClearing(true);
+      try {
+        const response = await fetch('/api/reports', { method: 'DELETE' });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to clear reports");
+        }
+        toast({ title: "Data Cleared", description: "All reports have been deleted from the database." });
+        onDataChange(); // Trigger re-fetch on parent page
+      } catch (error: any) {
+        console.error("Error clearing reports:", error);
+        toast({ variant: "destructive", title: "Clear Failed", description: error.message });
+      } finally {
+        setIsClearing(false);
+      }
     }
   };
 
-  const handleLoadSampleData = () => {
-    const sampleData = loadSampleReports();
-    setReports(sampleData);
-    toast({ title: "Sample Data Loaded", description: "Sample outbreak reports have been loaded." });
+  const handleLoadSampleData = async () => {
+    setIsLoadingSamples(true);
+    const sampleData = getSampleReportsArray(); // Gets the array of sample reports
+    try {
+      // Clear existing reports first to avoid duplicates if this is intended as a reset
+      // Or, ensure sample data has unique IDs if that's a concern for your ReportModel schema
+      // For this example, let's assume we are adding to existing or it's a fresh load.
+      // A more robust solution might clear existing samples first if they have specific IDs.
+
+      for (const report of sampleData) {
+        // Remove 'id' if present, as MongoDB will generate it.
+        const { id, ...reportPayload } = report;
+        const response = await fetch('/api/reports', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(reportPayload),
+        });
+        if (!response.ok) {
+          // If one fails, we might want to stop or log. For simplicity, continue.
+          console.error(`Failed to load sample report: ${report.suspectedDisease}`);
+        }
+      }
+      toast({ title: "Sample Data Loaded", description: "Sample outbreak reports have been loaded into the database." });
+      onDataChange(); // Trigger re-fetch
+    } catch (error: any) {
+      console.error("Error loading sample data:", error);
+      toast({ variant: "destructive", title: "Sample Load Failed", description: error.message });
+    } finally {
+      setIsLoadingSamples(false);
+    }
   };
 
   return (
     <Card className="mt-6 shadow-lg">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-xl">
-          <Settings /> System Configuration (Local Data)
+          <Settings /> System Configuration (Database)
         </CardTitle>
-        <CardDescription>Manage locally stored report data for demonstration purposes.</CardDescription>
+        <CardDescription>Manage report data in the database for demonstration purposes.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-4">
-        <Button onClick={handleLoadSampleData} variant="outline" className="w-full sm:w-auto">
-          <DatabaseZap className="mr-2 h-4 w-4" /> Load Sample Reports
+        <Button onClick={handleLoadSampleData} variant="outline" className="w-full sm:w-auto" disabled={isLoadingSamples || isClearing}>
+          {isLoadingSamples ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <DatabaseZap className="mr-2 h-4 w-4" />}
+           Load Sample Reports
         </Button>
-        <Button onClick={handleClearReports} variant="destructive" className="w-full sm:w-auto">
-          <Trash2 className="mr-2 h-4 w-4" /> Clear All Local Reports
+        <Button onClick={handleClearReports} variant="destructive" className="w-full sm:w-auto" disabled={isClearing || isLoadingSamples}>
+          {isClearing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+           Clear All Reports
         </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-            These actions only affect data stored in your browser for this simulation.
+            These actions affect data stored in the MongoDB database.
         </p>
       </CardContent>
     </Card>

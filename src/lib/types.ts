@@ -2,13 +2,13 @@
 export type UserRole = 'hew' | 'officer';
 
 export interface User {
-  id: string;
+  id: string; // This will correspond to MongoDB's _id string representation
   username: string;
   role: UserRole;
 }
 
 export interface Report {
-  id: string;
+  id: string; // This will correspond to MongoDB's _id string representation
   timestamp: number;
   symptoms: string;
   suspectedDisease: string;
@@ -18,8 +18,10 @@ export interface Report {
   location: {
     latitude: number;
     longitude: number;
-  } | null;
-  region?: string; // e.g., 'Addis Ababa', 'Tigray', etc.
-  // imageUrl?: string; // For simplicity, not storing actual image data
+  } | null; // Make location explicitly nullable
+  region?: string;
   isAnonymous?: boolean;
+  // imageUrl?: string; 
+  // MongoDB specific fields like _id, createdAt, updatedAt are handled by Mongoose model
+  // but 'id' will be the string version of _id for frontend use.
 }

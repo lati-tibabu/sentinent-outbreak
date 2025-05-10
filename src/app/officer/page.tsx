@@ -1,6 +1,6 @@
 
 "use client";
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/shared/Header';
@@ -9,41 +9,75 @@ import { ReportFilters, type ReportFiltersState } from '@/components/officer/Rep
 import { ReportsTable } from '@/components/officer/ReportsTable';
 import { DailyReportSection } from '@/components/officer/DailyReportSection';
 import { AdminSettingsSection } from '@/components/officer/AdminSettingsSection';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+// import { useLocalStorage } from '@/hooks/useLocalStorage'; // No longer using for reports
 import type { Report } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from '@/components/ui/skeleton';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from '@/hooks/use-toast';
 
 export default function OfficerPage() {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading: authIsLoading } = useAuth();
   const router = useRouter();
-  const initialReports = useMemo(() => [], []);
-  const [reports, setReports] = useLocalStorage<Report[]>('outbreak_sentinel_reports', initialReports);
+  const [allReports, setAllReports] = useState<Report[]>([]);
+  const [isLoadingReports, setIsLoadingReports] = useState(true);
+  const { toast } = useToast();
+
   const [filters, setFilters] = useState<ReportFiltersState>({
     region: '',
     disease: '',
     date: undefined,
   });
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push('/');
-    } else if (!isLoading && isAuthenticated && user?.role !== 'officer') {
-      router.push(user?.role === 'hew' ? '/hew' : '/');
+  const fetchReports = useCallback(async (currentFilters?: ReportFiltersState) => {
+    setIsLoadingReports(true);
+    const activeFilters = currentFilters || filters;
+    const queryParams = new URLSearchParams();
+    if (activeFilters.region) queryParams.append('region', activeFilters.region);
+    if (activeFilters.disease) queryParams.append('disease', activeFilters.disease);
+    if (activeFilters.date) queryParams.append('date', activeFilters.date.toISOString());
+
+    try {
+      const response = await fetch(`/api/reports?${queryParams.toString()}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch reports');
+      }
+      const data = await response.json();
+      setAllReports(data.reports || []);
+    } catch (error: any) {
+      console.error("Error fetching reports:", error);
+      toast({ variant: "destructive", title: "Error Fetching Reports", description: error.message });
+      setAllReports([]); // Set to empty on error
+    } finally {
+      setIsLoadingReports(false);
     }
-  }, [user, isAuthenticated, isLoading, router]);
+  }, [filters, toast]); // filters dependency ensures fetchReports is recreated if filter structure changes (not value)
 
-  const filteredReports = useMemo(() => {
-    return reports.filter(report => {
-      const matchRegion = filters.region ? report.region === filters.region : true;
-      const matchDisease = filters.disease ? report.suspectedDisease === filters.disease : true;
-      const matchDate = filters.date ? new Date(report.timestamp).toDateString() === filters.date.toDateString() : true;
-      return matchRegion && matchDisease && matchDate;
-    });
-  }, [reports, filters]);
+  useEffect(() => {
+    if (!authIsLoading && !isAuthenticated) {
+      router.push('/');
+    } else if (!authIsLoading && isAuthenticated && user?.role !== 'officer') {
+      router.push(user?.role === 'hew' ? '/hew' : '/');
+    } else if (!authIsLoading && isAuthenticated && user?.role === 'officer') {
+      fetchReports();
+    }
+  }, [user, isAuthenticated, authIsLoading, router, fetchReports]); // fetchReports is stable due to useCallback
 
-  if (isLoading || !isAuthenticated || user?.role !== 'officer') {
+  // This effect will run when filters change to re-fetch data
+  useEffect(() => {
+    if (isAuthenticated && user?.role === 'officer') {
+      fetchReports(filters);
+    }
+  }, [filters, isAuthenticated, user, fetchReports]);
+
+
+  // filteredReports is now equivalent to allReports since filtering is done server-side by fetchReports.
+  // If client-side filtering is still desired on top of server-side, this memo can be re-enabled.
+  // For now, `allReports` IS the filtered list from the server.
+  const filteredReports = allReports;
+
+  if (authIsLoading || !isAuthenticated || user?.role !== 'officer') {
     return (
        <div className="flex flex-col min-h-screen">
         <Header />
@@ -73,11 +107,11 @@ export default function OfficerPage() {
             </TabsList>
             
             <TabsContent value="dashboard">
-              <ScrollArea className="h-[calc(100vh-220px)]"> {/* Adjust height based on header/tabs */}
+              <ScrollArea className="h-[calc(100vh-220px)]"> 
                 <div className="pr-4 space-y-6">
                   <ReportFilters filters={filters} setFilters={setFilters} />
-                  <SimulatedMap reports={filteredReports} filters={filters} />
-                  <ReportsTable reports={filteredReports} />
+                  {isLoadingReports ? <Skeleton className="h-96 w-full" /> : <SimulatedMap reports={filteredReports} filters={filters} />}
+                  {isLoadingReports ? <Skeleton className="h-96 w-full" /> : <ReportsTable reports={filteredReports} />}
                 </div>
               </ScrollArea>
             </TabsContent>
@@ -85,7 +119,7 @@ export default function OfficerPage() {
             <TabsContent value="ai_report">
               <ScrollArea className="h-[calc(100vh-220px)]">
                 <div className="pr-4">
-                 <DailyReportSection reports={reports} /> {/* AI report uses all reports for context */}
+                 {isLoadingReports ? <Skeleton className="h-64 w-full" /> : <DailyReportSection reports={allReports} /> }
                 </div>
               </ScrollArea>
             </TabsContent>
@@ -93,7 +127,8 @@ export default function OfficerPage() {
             <TabsContent value="settings">
               <ScrollArea className="h-[calc(100vh-220px)]">
                 <div className="pr-4">
-                  <AdminSettingsSection setReports={setReports} />
+                  {/* Pass fetchReports to AdminSettingsSection to trigger re-fetch after data manipulation */}
+                  <AdminSettingsSection onDataChange={fetchReports} />
                 </div>
               </ScrollArea>
             </TabsContent>
