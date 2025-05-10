@@ -115,7 +115,7 @@ export function ReportForm({ onReportSubmit }: ReportFormProps) {
           </div>
           <div>
             <Label htmlFor="suspectedDisease">Suspected Disease *</Label>
-            <Select value={suspectedDisease} onValueChange={setSuspectedDisease} required>
+            <Select value={suspectedDisease} onValueChange={setSuspectedDisease}>
               <SelectTrigger id="suspectedDisease">
                 <SelectValue placeholder="Select disease..." />
               </SelectTrigger>
