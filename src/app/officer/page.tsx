@@ -18,7 +18,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 export default function OfficerPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
-  const [reports, setReports] = useLocalStorage<Report[]>('outbreak_sentinel_reports', []);
+  const initialReports = useMemo(() => [], []);
+  const [reports, setReports] = useLocalStorage<Report[]>('outbreak_sentinel_reports', initialReports);
   const [filters, setFilters] = useState<ReportFiltersState>({
     region: '',
     disease: '',

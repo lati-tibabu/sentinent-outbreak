@@ -1,6 +1,6 @@
 
 "use client";
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/shared/Header';
@@ -18,7 +18,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function HEWPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
-  const [reports, setReports] = useLocalStorage<Report[]>('outbreak_sentinel_reports', []);
+  const initialReports = useMemo(() => [], []);
+  const [reports, setReports] = useLocalStorage<Report[]>('outbreak_sentinel_reports', initialReports);
   const { toast } = useToast();
 
   useEffect(() => {
