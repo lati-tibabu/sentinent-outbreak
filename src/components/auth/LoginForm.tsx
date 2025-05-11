@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { UserRole } from '@/lib/types';
-import { LogIn, ShieldQuestion, Eye, EyeOff } from 'lucide-react';
+import { LogIn, ShieldQuestion, Eye, EyeOff, Home } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export function LoginForm() {
@@ -104,14 +104,23 @@ export function LoginForm() {
               <LogIn className="mr-2 h-5 w-5" /> {isLoading ? 'Logging in...' : 'Login'}
             </Button>
           </form>
-          <div className="mt-6 text-center">
+          <div className="mt-6 space-y-3 text-center">
             <Link href="/report/anonymous" className="text-sm text-primary hover:underline inline-flex items-center gap-1.5">
               <ShieldQuestion size={16} />
               Submit an Anonymous Community Report
             </Link>
+            <div>
+              <Button variant="outline" asChild size="sm">
+                <Link href="/">
+                  <Home className="mr-2 h-4 w-4" />
+                  Back to Home
+                </Link>
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
     </div>
   );
 }
+
