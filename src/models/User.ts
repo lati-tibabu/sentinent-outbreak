@@ -30,7 +30,7 @@ const UserSchema: Schema<IUser> = new Schema(
     },
     password: {
       type: String,
-      required: false, // Initially false, will become true for new users
+      required: false, 
     },
   },
   { timestamps: true }
@@ -39,7 +39,6 @@ const UserSchema: Schema<IUser> = new Schema(
 UserSchema.pre('save', async function (next) {
   const user = this as IUser;
 
-  // Only hash the password if it has been modified (or is new)
   if (!user.isModified('password') || !user.password) {
     return next();
   }
@@ -49,19 +48,19 @@ UserSchema.pre('save', async function (next) {
     user.password = await bcrypt.hash(user.password, salt);
     next();
   } catch (err: any) {
-    next(err);
+    console.error('Bcrypt error during pre-save hook for user:', user.username, err); // More specific logging
+    next(err); // Propagate the error so it can be caught by the route handler
   }
 });
 
 UserSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
   const user = this as IUser;
   if (!user.password) {
-    return false; // No password set, so comparison fails
+    return false; 
   }
   return bcrypt.compare(candidatePassword, user.password);
 };
 
-// Avoid recompiling the model if it already exists
 const UserModel: Model<IUser> = models.User || mongoose.model<IUser>('User', UserSchema);
 
 export default UserModel;
