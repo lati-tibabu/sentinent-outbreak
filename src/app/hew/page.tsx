@@ -1,17 +1,16 @@
-
 "use client";
-import { useEffect, useState, useMemo, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { Header } from '@/components/shared/Header';
-import { ReportForm } from '@/components/hew/ReportForm';
-import { LocalReportsList } from '@/components/hew/LocalReportsList'; // Renaming might be considered if it fetches all reports
-import { OutbreakAlertsDisplay } from '@/components/hew/OutbreakAlertsDisplay';
-import { Button } from '@/components/ui/button';
-import { RefreshCw, CloudOff, Loader2 } from 'lucide-react';
-import type { Report } from '@/lib/types';
-import { useToast } from '@/hooks/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
+import { Header } from "@/components/shared/Header";
+import { ReportForm } from "@/components/hew/ReportForm";
+import { LocalReportsList } from "@/components/hew/LocalReportsList"; // Renaming might be considered if it fetches all reports
+import { OutbreakAlertsDisplay } from "@/components/hew/OutbreakAlertsDisplay";
+import { Button } from "@/components/ui/button";
+import { RefreshCw, CloudOff, Loader2 } from "lucide-react";
+import type { Report } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function HEWPage() {
   const { user, isAuthenticated, isLoading: authIsLoading } = useAuth();
@@ -25,15 +24,23 @@ export default function HEWPage() {
     try {
       // For HEW, we might want to fetch reports they submitted, or all reports in their region.
       // For simplicity now, fetch all reports. This can be refined.
-      const response = await fetch('/api/reports');
+      const response = await fetch("/api/reports");
       if (!response.ok) {
-        throw new Error('Failed to fetch reports');
+        const errorData = await response.json();
+        console.error("API Error Data:", errorData); // Log the error data from the API
+        throw new Error(
+          `Failed to fetch reports: ${response.status} - ${response.statusText}`
+        );
       }
       const data = await response.json();
       setReports(data.reports || []);
     } catch (error) {
       console.error("Error fetching reports:", error);
-      toast({ variant: "destructive", title: "Error", description: "Could not fetch reports." });
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not fetch reports.",
+      });
       setReports([]); // Set to empty on error
     } finally {
       setIsLoadingReports(false);
@@ -42,14 +49,13 @@ export default function HEWPage() {
 
   useEffect(() => {
     if (!authIsLoading && !isAuthenticated) {
-      router.push('/auth/login');
-    } else if (!authIsLoading && isAuthenticated && user?.role !== 'hew') {
-      router.push(user?.role === 'officer' ? '/officer' : '/auth/login');
-    } else if (!authIsLoading && isAuthenticated && user?.role === 'hew') {
+      router.push("/auth/login");
+    } else if (!authIsLoading && isAuthenticated && user?.role !== "hew") {
+      router.push(user?.role === "officer" ? "/officer" : "/auth/login");
+    } else if (!authIsLoading && isAuthenticated && user?.role === "hew") {
       fetchReports(); // Fetch reports when HEW is authenticated
     }
   }, [user, isAuthenticated, authIsLoading, router, fetchReports]);
-
 
   const handleSimulateSync = () => {
     // Sync simulation is less relevant now that data goes to backend.
@@ -65,7 +71,7 @@ export default function HEWPage() {
   // If LocalReportsList needs to update after submission, ReportForm could take an onSubmissionSuccess prop.
   // For now, a manual refresh (simulateSync) or page reload would show new reports.
 
-  if (authIsLoading || !isAuthenticated || user?.role !== 'hew') {
+  if (authIsLoading || !isAuthenticated || user?.role !== "hew") {
     return (
       <div className="flex flex-col min-h-screen">
         <Header />
@@ -83,27 +89,36 @@ export default function HEWPage() {
       <Header />
       <main className="flex-grow container mx-auto px-2 py-6 sm:px-4 md:max-w-2xl">
         <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-semibold text-primary">HEW Mobile Portal</h2>
-            <Button onClick={handleSimulateSync} variant="outline" disabled={isLoadingReports}>
-                {isLoadingReports ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                Refresh Reports
-            </Button>
+          <h2 className="text-2xl font-semibold text-primary">
+            HEW Mobile Portal
+          </h2>
+          <Button
+            onClick={handleSimulateSync}
+            variant="outline"
+            disabled={isLoadingReports}
+          >
+            {isLoadingReports ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
+            Refresh Reports
+          </Button>
         </div>
-        
+
         <OutbreakAlertsDisplay reports={reports} />
         {/* ReportForm no longer needs onReportSubmit prop for local state update */}
-        <ReportForm /> 
-        
+        <ReportForm />
+
         {isLoadingReports ? (
-          <Skeleton className="h-48 w-full mt-6" /> 
+          <Skeleton className="h-48 w-full mt-6" />
         ) : (
           <LocalReportsList reports={reports} />
         )}
-        
 
         <div className="mt-8 p-3 bg-muted text-muted-foreground rounded-lg text-sm flex items-center justify-center gap-2">
-            <CloudOff size={18} />
-            <span>Reports are submitted to the server when online.</span>
+          <CloudOff size={18} />
+          <span>Reports are submitted to the server when online.</span>
         </div>
       </main>
     </div>
