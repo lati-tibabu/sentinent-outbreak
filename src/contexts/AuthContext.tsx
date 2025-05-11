@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (username: string, role: UserRole) => Promise<void>;
+  login: (username: string, password_DO_NOT_USE_THIS_NAME_IT_IS_A_PLACEHOLDER: string, role: UserRole) => Promise<void>; // Password param added
   logout: () => void;
   isLoading: boolean;
 }
@@ -24,7 +24,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Load user from localStorage on initial mount for session persistence
     const storedUser = getStoredUser();
     if (storedUser) {
       setUser(storedUser);
@@ -32,13 +31,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, []);
 
-  const login = useCallback(async (username: string, role: UserRole) => {
+  const login = useCallback(async (username: string, password_DO_NOT_USE_THIS_NAME_IT_IS_A_PLACEHOLDER: string, role: UserRole) => {
     setIsLoading(true);
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, role }),
+        body: JSON.stringify({ username, password: password_DO_NOT_USE_THIS_NAME_IT_IS_A_PLACEHOLDER, role }),
       });
 
       if (!response.ok) {
@@ -49,7 +48,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const data = await response.json();
       const apiUser = data.user as User;
       
-      storeUser(apiUser); // Store in localStorage for session persistence
+      storeUser(apiUser);
       setUser(apiUser);
 
       toast({ title: 'Login Successful', description: `Welcome, ${apiUser.username}!` });
@@ -59,21 +58,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else if (apiUser.role === 'officer') {
         router.push('/officer');
       } else {
-        router.push('/'); // Fallback
+        router.push('/'); 
       }
     } catch (error: any) {
       console.error('Login error:', error);
       toast({ variant: 'destructive', title: 'Login Failed', description: error.message || 'An unexpected error occurred.' });
-      setUser(null); // Ensure user is null on failed login
-      clearStoredUser(); // Clear any potentially stale user data
+      setUser(null); 
+      clearStoredUser(); 
     } finally {
       setIsLoading(false);
     }
   }, [router, toast]);
 
   const logout = useCallback(() => {
-    // Future: Call '/api/auth/logout' if server-side sessions/tokens are implemented
-    clearStoredUser(); // Clear from localStorage
+    clearStoredUser(); 
     setUser(null);
     toast({ title: 'Logged Out', description: 'You have been successfully logged out.' });
     router.push('/');

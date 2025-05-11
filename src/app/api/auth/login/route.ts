@@ -7,34 +7,42 @@ import type { UserRole } from '@/lib/types';
 export async function POST(req: NextRequest) {
   try {
     await connectDB();
-    const { username, role } = await req.json() as { username: string; role: UserRole };
+    const { username, password, role } = await req.json() as { username: string; password?: string; role: UserRole };
 
     if (!username || !role) {
       return NextResponse.json({ message: 'Username and role are required' }, { status: 400 });
+    }
+     if (!password) {
+      return NextResponse.json({ message: 'Password is required' }, { status: 400 });
     }
 
     if (!['hew', 'officer'].includes(role)) {
       return NextResponse.json({ message: 'Invalid role' }, { status: 400 });
     }
 
-    let user = await UserModel.findOne({ username });
+    const user = await UserModel.findOne({ username });
 
-    if (user) {
-      // User exists, check if role matches. If not, update role.
-      // For simplicity in "username-only login", we can allow role change on login.
-      // In a real app with passwords, this logic might be different.
-      if (user.role !== role) {
-        user.role = role;
-        await user.save();
-      }
-    } else {
-      // User does not exist, create a new one
-      // In a real app, you'd likely want password setup here or pre-provisioned users.
-      user = new UserModel({ username, role });
-      await user.save();
+    if (!user) {
+      return NextResponse.json({ message: 'Invalid username or password' }, { status: 401 });
+    }
+
+    // If user exists but has no password (e.g. old account), they can't log in with password
+    if (!user.password) {
+        return NextResponse.json({ message: 'Account requires password setup. Please contact admin.' }, { status: 401 });
+    }
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return NextResponse.json({ message: 'Invalid username or password' }, { status: 401 });
+    }
+
+    // Role check: Ensure the user is logging in with their assigned role
+    // If the role provided in the login attempt doesn't match the stored role, deny login.
+    // This prevents a user from switching roles just by selecting a different one on the login form.
+    if (user.role !== role) {
+        return NextResponse.json({ message: `Login failed. User is registered as ${user.role}, not ${role}.` }, { status: 403 });
     }
     
-    // Return user data (excluding password if it were present)
     const userData = {
         id: user._id.toString(),
         username: user.username,

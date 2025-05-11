@@ -1,3 +1,4 @@
+
 "use client";
 import { useState, type FormEvent } from 'react';
 import Link from 'next/link';
@@ -8,20 +9,28 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { UserRole } from '@/lib/types';
-import { LogIn, ShieldQuestion } from 'lucide-react';
+import { LogIn, ShieldQuestion, Eye, EyeOff } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export function LoginForm() {
   const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<UserRole>('hew');
-  const { login } = useAuth();
+  const { login, isLoading } = useAuth();
+  const { toast } = useToast();
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (username.trim() === '') {
-      alert('Please enter a username.'); // Simple validation
+      toast({ variant: 'destructive', title: 'Validation Error', description: 'Please enter a username.' });
       return;
     }
-    login(username, role);
+    if (password.trim() === '') {
+      toast({ variant: 'destructive', title: 'Validation Error', description: 'Please enter a password.' });
+      return;
+    }
+    login(username, password, role);
   };
 
   return (
@@ -46,7 +55,33 @@ export function LoginForm() {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 className="text-base"
+                autoComplete="username"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="text-base pr-10"
+                  autoComplete="current-password"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-2"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </Button>
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Role</Label>
@@ -65,8 +100,8 @@ export function LoginForm() {
                 </div>
               </RadioGroup>
             </div>
-            <Button type="submit" className="w-full text-lg py-3">
-              <LogIn className="mr-2 h-5 w-5" /> Login
+            <Button type="submit" className="w-full text-lg py-3" disabled={isLoading}>
+              <LogIn className="mr-2 h-5 w-5" /> {isLoading ? 'Logging in...' : 'Login'}
             </Button>
           </form>
           <div className="mt-6 text-center">

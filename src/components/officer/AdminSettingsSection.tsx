@@ -4,12 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DatabaseZap, Trash2, Settings, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { Report } from '@/lib/types';
-import { getSampleReportsArray } from '@/lib/localStorageHelper'; // Renamed and modified function
+import { getSampleReportsArray } from '@/lib/localStorageHelper';
+import { CreateUserForm } from '@/components/admin/CreateUserForm'; // Import CreateUserForm
 import { useState } from 'react';
 
 interface AdminSettingsSectionProps {
-  onDataChange: () => void; // Callback to re-fetch reports on OfficerPage
+  onDataChange: () => void; 
 }
 
 export function AdminSettingsSection({ onDataChange }: AdminSettingsSectionProps) {
@@ -27,7 +27,7 @@ export function AdminSettingsSection({ onDataChange }: AdminSettingsSectionProps
           throw new Error(errorData.message || "Failed to clear reports");
         }
         toast({ title: "Data Cleared", description: "All reports have been deleted from the database." });
-        onDataChange(); // Trigger re-fetch on parent page
+        onDataChange(); 
       } catch (error: any) {
         console.error("Error clearing reports:", error);
         toast({ variant: "destructive", title: "Clear Failed", description: error.message });
@@ -39,15 +39,9 @@ export function AdminSettingsSection({ onDataChange }: AdminSettingsSectionProps
 
   const handleLoadSampleData = async () => {
     setIsLoadingSamples(true);
-    const sampleData = getSampleReportsArray(); // Gets the array of sample reports
+    const sampleData = getSampleReportsArray(); 
     try {
-      // Clear existing reports first to avoid duplicates if this is intended as a reset
-      // Or, ensure sample data has unique IDs if that's a concern for your ReportModel schema
-      // For this example, let's assume we are adding to existing or it's a fresh load.
-      // A more robust solution might clear existing samples first if they have specific IDs.
-
       for (const report of sampleData) {
-        // Remove 'id' if present, as MongoDB will generate it.
         const { id, ...reportPayload } = report;
         const response = await fetch('/api/reports', {
           method: 'POST',
@@ -55,12 +49,11 @@ export function AdminSettingsSection({ onDataChange }: AdminSettingsSectionProps
           body: JSON.stringify(reportPayload),
         });
         if (!response.ok) {
-          // If one fails, we might want to stop or log. For simplicity, continue.
           console.error(`Failed to load sample report: ${report.suspectedDisease}`);
         }
       }
       toast({ title: "Sample Data Loaded", description: "Sample outbreak reports have been loaded into the database." });
-      onDataChange(); // Trigger re-fetch
+      onDataChange(); 
     } catch (error: any) {
       console.error("Error loading sample data:", error);
       toast({ variant: "destructive", title: "Sample Load Failed", description: error.message });
@@ -70,28 +63,32 @@ export function AdminSettingsSection({ onDataChange }: AdminSettingsSectionProps
   };
 
   return (
-    <Card className="mt-6 shadow-lg">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-xl">
-          <Settings /> System Configuration (Database)
-        </CardTitle>
-        <CardDescription>Manage report data in the database for demonstration purposes.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex flex-col sm:flex-row gap-4">
-        <Button onClick={handleLoadSampleData} variant="outline" className="w-full sm:w-auto" disabled={isLoadingSamples || isClearing}>
-          {isLoadingSamples ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <DatabaseZap className="mr-2 h-4 w-4" />}
-           Load Sample Reports
-        </Button>
-        <Button onClick={handleClearReports} variant="destructive" className="w-full sm:w-auto" disabled={isClearing || isLoadingSamples}>
-          {isClearing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
-           Clear All Reports
-        </Button>
-        </div>
-        <p className="text-xs text-muted-foreground">
-            These actions affect data stored in the MongoDB database.
-        </p>
-      </CardContent>
-    </Card>
+    <>
+      <Card className="mt-6 shadow-lg">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <Settings /> Report Data Management
+          </CardTitle>
+          <CardDescription>Manage report data in the database for demonstration purposes.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+          <Button onClick={handleLoadSampleData} variant="outline" className="w-full sm:w-auto" disabled={isLoadingSamples || isClearing}>
+            {isLoadingSamples ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <DatabaseZap className="mr-2 h-4 w-4" />}
+             Load Sample Reports
+          </Button>
+          <Button onClick={handleClearReports} variant="destructive" className="w-full sm:w-auto" disabled={isClearing || isLoadingSamples}>
+            {isClearing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+             Clear All Reports
+          </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+              These actions affect data stored in the MongoDB database.
+          </p>
+        </CardContent>
+      </Card>
+
+      <CreateUserForm /> 
+    </>
   );
 }
