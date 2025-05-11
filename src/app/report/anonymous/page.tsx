@@ -13,7 +13,7 @@ export default function AnonymousReportPage() {
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
             <h1 className="text-xl font-semibold">Outbreak Sentinel - Anonymous Report</h1>
             <Button variant="ghost" asChild className="hover:bg-primary-foreground hover:text-primary">
-              <Link href="/">
+              <Link href="/auth/login">
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back to Login
               </Link>
             </Button>

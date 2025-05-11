@@ -14,7 +14,7 @@ export default function AdminRegisterUsersPage() {
             <h1 className="text-xl font-semibold">Admin - User Registration</h1>
           </div>
           <Button variant="ghost" asChild className="hover:bg-primary-foreground hover:text-primary">
-            <Link href="/">
+            <Link href="/auth/login">
               <ArrowLeft className="mr-2 h-4 w-4" /> Back to Login
             </Link>
           </Button>

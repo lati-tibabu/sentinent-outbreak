@@ -58,7 +58,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else if (apiUser.role === 'officer') {
         router.push('/officer');
       } else {
-        router.push('/'); 
+        router.push('/auth/login'); 
       }
     } catch (error: any) {
       console.error('Login error:', error);
@@ -74,7 +74,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     clearStoredUser(); 
     setUser(null);
     toast({ title: 'Logged Out', description: 'You have been successfully logged out.' });
-    router.push('/');
+    router.push('/auth/login');
   }, [router, toast]);
 
   return (

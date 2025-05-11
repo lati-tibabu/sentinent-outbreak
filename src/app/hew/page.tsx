@@ -42,9 +42,9 @@ export default function HEWPage() {
 
   useEffect(() => {
     if (!authIsLoading && !isAuthenticated) {
-      router.push('/');
+      router.push('/auth/login');
     } else if (!authIsLoading && isAuthenticated && user?.role !== 'hew') {
-      router.push(user?.role === 'officer' ? '/officer' : '/');
+      router.push(user?.role === 'officer' ? '/officer' : '/auth/login');
     } else if (!authIsLoading && isAuthenticated && user?.role === 'hew') {
       fetchReports(); // Fetch reports when HEW is authenticated
     }

@@ -56,9 +56,9 @@ export default function OfficerPage() {
 
   useEffect(() => {
     if (!authIsLoading && !isAuthenticated) {
-      router.push('/');
+      router.push('/auth/login');
     } else if (!authIsLoading && isAuthenticated && user?.role !== 'officer') {
-      router.push(user?.role === 'hew' ? '/hew' : '/');
+      router.push(user?.role === 'hew' ? '/hew' : '/auth/login');
     } else if (!authIsLoading && isAuthenticated && user?.role === 'officer') {
       fetchReports();
     }
