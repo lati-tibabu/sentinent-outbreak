@@ -13,21 +13,21 @@ const ReportSchema: Schema<IReport> = new Schema(
     timestamp: { type: Number, required: true, index: true },
     symptoms: { type: String, required: true },
     suspectedDisease: { type: String, required: true, index: true },
-    patientName: { type: String }, // Removed required: false
-    patientAge: { type: Number }, // Removed required: false
+    patientName: { type: String }, 
+    patientAge: { type: Number }, 
     patientGender: {
       type: String,
-      enum: ['male', 'female', 'other', 'not_specified', null], // Allow null if not provided
-    }, // Removed required: false
+      enum: ['male', 'female', 'other', 'not_specified', null], 
+    }, 
     location: {
-      latitude: { type: Number }, // Removed required: false
-      longitude: { type: Number }, // Removed required: false
-      default: null,
-      // Removed required: false from the parent location object as well.
-      // If location itself is optional, its presence is enough.
-      // The sub-fields latitude/longitude being optional is handled by their individual definitions.
+      type: { // Explicitly define type for the nested object
+        latitude: { type: Number },
+        longitude: { type: Number },
+      },
+      default: undefined, // Use undefined or remove default entirely if it should be absent
+      required: false, // Location itself is not required
     },
-    region: { type: String, index: true }, // Removed required: false
+    region: { type: String, index: true }, 
     isAnonymous: { type: Boolean, default: false },
     // imageUrl: { type: String, required: false }, // If implemented later
   },
@@ -43,6 +43,8 @@ ReportSchema.pre('save', function (next) {
     // If location is an empty object, set it to null
     this.location = null;
   }
+  // If location is not provided at all (i.e. undefined), it will remain undefined and not saved as null unless explicitly set
+  // If this.location is already null, it will remain null.
   next();
 });
 
@@ -50,3 +52,4 @@ ReportSchema.pre('save', function (next) {
 const ReportModel: Model<IReport> = models.Report || mongoose.model<IReport>('Report', ReportSchema);
 
 export default ReportModel;
+
