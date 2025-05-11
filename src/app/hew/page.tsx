@@ -1,3 +1,4 @@
+
 "use client";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -22,24 +23,40 @@ export default function HEWPage() {
   const fetchReports = useCallback(async () => {
     setIsLoadingReports(true);
     try {
-      // For HEW, we might want to fetch reports they submitted, or all reports in their region.
-      // For simplicity now, fetch all reports. This can be refined.
       const response = await fetch("/api/reports");
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error("API Error Data:", errorData); // Log the error data from the API
-        throw new Error(
-          `Failed to fetch reports: ${response.status} - ${response.statusText}`
-        );
+        let errorMessage = `Failed to fetch reports: ${response.status} - ${response.statusText}`;
+        try {
+          const contentType = response.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            const errorData = await response.json();
+            console.error("API Error Data (JSON):", errorData);
+            errorMessage = errorData.message || errorData.error || errorMessage;
+          } else {
+            const errorText = await response.text();
+            console.error("API Error Data (Non-JSON):", errorText);
+            // Attempt to extract a meaningful message if it's HTML, otherwise use the raw text.
+            const titleMatch = errorText.match(/<title>(.*?)<\/title>/i);
+            if (titleMatch && titleMatch[1]) {
+              errorMessage = titleMatch[1];
+            } else if (errorText.length < 200) { // Arbitrary length to avoid huge HTML dumps
+                errorMessage = errorText;
+            }
+          }
+        } catch (parseError) {
+          console.error("Error parsing error response:", parseError);
+          // Fallback to the original status text if parsing fails
+        }
+        throw new Error(errorMessage);
       }
       const data = await response.json();
       setReports(data.reports || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching reports:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Could not fetch reports.",
+        title: "Error Fetching Reports",
+        description: error.message || "Could not fetch reports. Please check console for details.",
       });
       setReports([]); // Set to empty on error
     } finally {
@@ -58,8 +75,6 @@ export default function HEWPage() {
   }, [user, isAuthenticated, authIsLoading, router, fetchReports]);
 
   const handleSimulateSync = () => {
-    // Sync simulation is less relevant now that data goes to backend.
-    // This could become a manual "Refresh Data" button.
     toast({
       title: "Data Refresh Triggered",
       description: "Fetching latest reports from the server.",
@@ -67,9 +82,6 @@ export default function HEWPage() {
     fetchReports();
   };
 
-  // The ReportForm now handles its own submission.
-  // If LocalReportsList needs to update after submission, ReportForm could take an onSubmissionSuccess prop.
-  // For now, a manual refresh (simulateSync) or page reload would show new reports.
 
   if (authIsLoading || !isAuthenticated || user?.role !== "hew") {
     return (
@@ -107,7 +119,6 @@ export default function HEWPage() {
         </div>
 
         <OutbreakAlertsDisplay reports={reports} />
-        {/* ReportForm no longer needs onReportSubmit prop for local state update */}
         <ReportForm />
 
         {isLoadingReports ? (
