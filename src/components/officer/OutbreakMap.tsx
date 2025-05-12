@@ -1,3 +1,4 @@
+
 // components/officer/OutbreakMap.tsx
 'use client';
 
@@ -136,7 +137,13 @@ export function OutbreakMap({ reports }: OutbreakMapProps) {
       </CardHeader>
       <CardContent>
         <div className="h-[450px] w-full bg-muted rounded-md border">
-          <MapContainer center={[9.145, 40.4897]} zoom={6} style={{ height: '100%', width: '100%' }} className="rounded-md">
+          <MapContainer
+            id="outbreak-map-instance" // Added a static ID for the map container
+            center={[9.145, 40.4897]}
+            zoom={6}
+            style={{ height: '100%', width: '100%' }}
+            className="rounded-md"
+          >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -206,3 +213,4 @@ export function OutbreakMap({ reports }: OutbreakMapProps) {
     </Card>
   );
 }
+
