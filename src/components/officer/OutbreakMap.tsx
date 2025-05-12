@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -47,7 +47,7 @@ const diseaseColorMap: { [key: string]: string } = {
   Measles: "text-orange-500",
   Pneumonia: "text-yellow-500",
   "Typhoid Fever": "text-purple-500",
-  Default: "text-green-500",
+  Default: "text-green-500", // Fallback color
 };
 
 const getDiseaseColorClass = (disease: string) => {
@@ -65,15 +65,12 @@ function MapEffectController({ points }: { points: MappedPoint[] }) {
       if (bounds.isValid()) {
         map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
       } else if (points.length === 1) {
-        // Handle single point case: zoom to it
-        map.setView([points[0].latitude, points[0].longitude], 10); // Adjust zoom level as needed
+        map.setView([points[0].latitude, points[0].longitude], 10);
       } else {
-        // Fallback if bounds are not valid for multiple points (should be rare) or if points array is empty after checks
         map.setView([9.145, 40.4897], 6); // Default to Ethiopia
       }
     } else {
-      // Default view for Ethiopia if no points
-      map.setView([9.145, 40.4897], 6);
+      map.setView([9.145, 40.4897], 6); // Default to Ethiopia if no points
     }
   }, [points, map]);
 
@@ -81,6 +78,19 @@ function MapEffectController({ points }: { points: MappedPoint[] }) {
 }
 
 export function OutbreakMap({ reports }: OutbreakMapProps) {
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
+
+  // Effect for cleaning up the map instance on component unmount
+  useEffect(() => {
+    return () => {
+      if (mapInstance) {
+        mapInstance.remove();
+        setMapInstance(null); // Clear the instance from state
+      }
+    };
+  }, [mapInstance]);
+
+
   const mappedPoints: MappedPoint[] = reports.reduce(
     (acc: MappedPoint[], report) => {
       if (
@@ -139,8 +149,8 @@ export function OutbreakMap({ reports }: OutbreakMapProps) {
       </CardHeader>
       <CardContent>
         <div className="h-[450px] w-full bg-muted rounded-md border">
-          {/* The typeof window check is removed because OutbreakMap component is already dynamically imported with ssr: false */}
           <MapContainer
+            whenCreated={setMapInstance} // Get map instance
             center={[9.145, 40.4897]}
             zoom={6}
             style={{ height: "100%", width: "100%" }}
@@ -186,11 +196,16 @@ export function OutbreakMap({ reports }: OutbreakMapProps) {
             ))}
           </MapContainer>
         </div>
-        {mappedPoints.length === 0 && reportsWithAnyLocation > 0 && (
+        {mappedPoints.length === 0 && reports.length > 0 && reportsWithAnyLocation === 0 && (
+           <div className="mt-2 p-3 text-center text-sm bg-yellow-100 border border-yellow-300 text-yellow-700 rounded-md flex items-center justify-center gap-2">
+            <AlertTriangle size={18} />
+            No reports currently have location data to display on the map.
+          </div>
+        )}
+        {mappedPoints.length === 0 && reports.length > 0 && reportsWithAnyLocation > 0 && (
           <div className="mt-2 p-3 text-center text-sm bg-yellow-100 border border-yellow-300 text-yellow-700 rounded-md flex items-center justify-center gap-2">
             <AlertTriangle size={18} />
-            Some reports have location/region data, but could not be placed on
-            the map (e.g., outside expected bounds or region not in lookup).
+            Some reports have location/region data, but could not be placed on the map (e.g., outside expected bounds or region not in lookup).
           </div>
         )}
         {uniqueDiseasesInMap.length > 0 && (
