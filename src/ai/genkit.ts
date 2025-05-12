@@ -19,6 +19,6 @@ if (process.env.GOOGLE_API_KEY && process.env.GOOGLE_API_KEY !== "YOUR_GOOGLE_AP
 export const ai = genkit({
   plugins: [googleAI(googleAIParams)],
   // Default model can be overridden in specific prompts/flows
-  // model: 'googleai/gemini-1.5-flash-latest', // Example. Ensure this model is accessible with/without key.
+  model: 'googleai/gemini-1.5-flash-latest', // Ensure this model is accessible with/without key.
 });
 
