@@ -1,29 +1,29 @@
-"use client";
-import React, { useEffect, useState, useRef, useMemo } from "react"; // Added React and useMemo
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
-import type { Report } from "@/lib/types";
-import { regionCoordinates } from "@/lib/regionCoordinates";
+// components/officer/OutbreakMap.tsx
+'use client';
+
+import React, { useEffect, useMemo } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+import type { Report } from '@/lib/types';
+import { regionCoordinates } from '@/lib/regionCoordinates';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { MapPin, AlertTriangle } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+} from '@/components/ui/card';
+import { MapPin, AlertTriangle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
-// Fix for default Leaflet icon issue
+// Fix default icon path issues as per the user's example
 // @ts-ignore
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
 });
 
 interface OutbreakMapProps {
@@ -39,6 +39,9 @@ interface MappedPoint {
   symptoms: string;
   timestamp: number;
   isApproximate: boolean;
+  patientName?: string;
+  patientAge?: number;
+  patientGender?: string;
 }
 
 const diseaseColorMap: { [key: string]: string } = {
@@ -54,36 +57,28 @@ const getDiseaseColorClass = (disease: string) => {
   return diseaseColorMap[disease] || diseaseColorMap["Default"];
 };
 
-function MapEffectController({ points }: { points: MappedPoint[] }) {
-  const map = useMap();
 
+function MapViewAdjuster({ points }: { points: MappedPoint[] }) {
+  const map = useMap();
   useEffect(() => {
-    if (map && points && points.length > 0) {
-      const latLngs = points.map((p) => L.latLng(p.latitude, p.longitude));
-      const bounds = L.latLngBounds(latLngs);
+    if (points.length > 0) {
+      const bounds = L.latLngBounds(points.map(p => [p.latitude, p.longitude]));
       if (bounds.isValid()) {
         map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
-      } else if (points.length === 1) { // Single point
+      } else if (points.length === 1) {
         map.setView([points[0].latitude, points[0].longitude], 10);
-      } else { // Multiple points at the exact same location, or invalid bounds for other reasons
-         map.setView([points[0].latitude, points[0].longitude], 6); // Fallback to first point
       }
-    } else if (map) { // Map exists, but no points
+    } else {
       map.setView([9.145, 40.4897], 6); // Default to Ethiopia
     }
   }, [points, map]);
-
   return null;
 }
 
 export function OutbreakMap({ reports }: OutbreakMapProps) {
-  const mappedPoints: MappedPoint[] = useMemo(() => 
-    reports.reduce((acc: MappedPoint[], report) => {
-      if (
-        report.location &&
-        typeof report.location.latitude === "number" &&
-        typeof report.location.longitude === "number"
-      ) {
+  const mappedPoints = useMemo(() => {
+    return reports.reduce((acc: MappedPoint[], report) => {
+      if (report.location && typeof report.location.latitude === 'number' && typeof report.location.longitude === 'number') {
         acc.push({
           id: report.id,
           latitude: report.location.latitude,
@@ -93,6 +88,9 @@ export function OutbreakMap({ reports }: OutbreakMapProps) {
           symptoms: report.symptoms,
           timestamp: report.timestamp,
           isApproximate: false,
+          patientName: report.patientName,
+          patientAge: report.patientAge,
+          patientGender: report.patientGender,
         });
       } else if (report.region && regionCoordinates[report.region]) {
         const coords = regionCoordinates[report.region];
@@ -105,22 +103,25 @@ export function OutbreakMap({ reports }: OutbreakMapProps) {
           symptoms: report.symptoms,
           timestamp: report.timestamp,
           isApproximate: true,
+          patientName: report.patientName,
+          patientAge: report.patientAge,
+          patientGender: report.patientGender,
         });
       }
       return acc;
-    }, []),
-    [reports]
-  );
+    }, []);
+  }, [reports]);
 
   const uniqueDiseasesInMap = useMemo(() =>
     Array.from(new Set(mappedPoints.map((p) => p.disease))),
     [mappedPoints]
   );
-  
+
   const reportsWithAnyLocation = useMemo(() =>
-    reports.filter((r) => r.location || (r.region && regionCoordinates[r.region])).length,
+    reports.filter((r) => r.location || (r.region && regionCoordinates[r.region!])).length,
     [reports]
   );
+
 
   return (
     <Card className="shadow-lg">
@@ -129,50 +130,36 @@ export function OutbreakMap({ reports }: OutbreakMapProps) {
           <MapPin /> Outbreak Map
         </CardTitle>
         <CardDescription>
-          Geographical distribution of reported cases. Showing{" "}
-          {mappedPoints.length} reports on map.
-          {reportsWithAnyLocation === 0 &&
-            reports.length > 0 &&
-            " No reports have location data."}
+          Geographical distribution of reported cases. Showing {mappedPoints.length} reports on map.
+          {reportsWithAnyLocation === 0 && reports.length > 0 && " No reports have location data."}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="h-[450px] w-full bg-muted rounded-md border">
-          <MapContainer
-            center={[9.145, 40.4897]}
-            zoom={6}
-            style={{ height: "100%", width: "100%" }}
-            className="rounded-md"
-          >
+          <MapContainer center={[9.145, 40.4897]} zoom={6} style={{ height: '100%', width: '100%' }} className="rounded-md">
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <MapEffectController points={mappedPoints} />
+            <MapViewAdjuster points={mappedPoints} />
             {mappedPoints.map((point) => (
-              <Marker
-                key={point.id}
-                position={[point.latitude, point.longitude]}
-              >
+              <Marker key={point.id} position={[point.latitude, point.longitude]}>
                 <Popup minWidth={200}>
                   <div className="space-y-1">
-                    <h4
-                      className={`font-bold text-md ${getDiseaseColorClass(
-                        point.disease
-                      )}`}
-                    >
+                    <h4 className={`font-bold text-md ${getDiseaseColorClass(point.disease)}`}>
                       {point.disease}
                     </h4>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(point.timestamp).toLocaleDateString()}
+                      Reported: {new Date(point.timestamp).toLocaleDateString()}
                     </p>
-                    {point.region && (
-                      <p className="text-sm">Region: {point.region}</p>
+                    {point.region && <p className="text-sm">Region: {point.region}</p>}
+                    <p className="text-sm">Symptoms: <span className="font-normal">{point.symptoms}</span></p>
+                    {!point.isApproximate && point.patientName && (
+                       <p className="text-sm">Patient: {point.patientName} 
+                       {point.patientAge ? ` (${point.patientAge} yrs` : ''}
+                       {point.patientGender ? `, ${point.patientGender})` : point.patientAge ? ')' : ''}
+                       </p>
                     )}
-                    <p className="text-sm">
-                      Symptoms:{" "}
-                      <span className="font-normal">{point.symptoms}</span>
-                    </p>
                     {point.isApproximate && (
                       <p className="text-xs text-orange-600 italic">
                         Location is an approximation for the region.
@@ -188,14 +175,6 @@ export function OutbreakMap({ reports }: OutbreakMapProps) {
            <div className="mt-2 p-3 text-center text-sm bg-yellow-100 border border-yellow-300 text-yellow-700 rounded-md flex items-center justify-center gap-2">
             <AlertTriangle size={18} />
             No reports currently have location data to display on the map.
-          </div>
-        )}
-        {mappedPoints.length === 0 && reports.length > 0 && reportsWithAnyLocation > 0 && (
-          // This case might occur if mappedPoints logic filters out all points even if reportsWithAnyLocation is > 0
-          // Or if mapping logic has an issue.
-          <div className="mt-2 p-3 text-center text-sm bg-yellow-100 border border-yellow-300 text-yellow-700 rounded-md flex items-center justify-center gap-2">
-            <AlertTriangle size={18} />
-            Reports have location/region data, but none could be placed on the map. Check console for potential data issues.
           </div>
         )}
         {uniqueDiseasesInMap.length > 0 && (
