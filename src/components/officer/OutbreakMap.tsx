@@ -52,15 +52,20 @@ function MapEffectController({ points }: { points: MappedPoint[] }) {
   const map = useMap();
 
   useEffect(() => {
-    if (points.length > 0) {
+    if (points && points.length > 0) {
       const latLngs = points.map(p => L.latLng(p.latitude, p.longitude));
       const bounds = L.latLngBounds(latLngs);
       if (bounds.isValid()) {
         map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
+      } else if (points.length === 1) { // Handle single point case: zoom to it
+        map.setView([points[0].latitude, points[0].longitude], 10); // Adjust zoom level as needed
+      } else {
+        // Fallback if bounds are not valid for multiple points (should be rare) or if points array is empty after checks
+        map.setView([9.145, 40.4897], 6); // Default to Ethiopia
       }
     } else {
-      // Default view for Ethiopia if no points or if bounds are not valid
-      map.setView([9.145, 40.4897], 6); // Centered on Ethiopia
+      // Default view for Ethiopia if no points
+      map.setView([9.145, 40.4897], 6); 
     }
   }, [points, map]);
 
@@ -113,32 +118,31 @@ export function OutbreakMap({ reports }: OutbreakMapProps) {
       </CardHeader>
       <CardContent>
         <div className="h-[450px] w-full bg-muted rounded-md border">
-          {typeof window !== 'undefined' && ( // Ensure Leaflet only runs on the client
-            <MapContainer center={[9.145, 40.4897]} zoom={6} style={{ height: '100%', width: '100%' }} className="rounded-md">
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              <MapEffectController points={mappedPoints} />
-              {mappedPoints.map(point => (
-                <Marker key={point.id} position={[point.latitude, point.longitude]}>
-                  <Popup minWidth={200}>
-                    <div className="space-y-1">
-                      <h4 className={`font-bold text-md ${getDiseaseColorClass(point.disease)}`}>{point.disease}</h4>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(point.timestamp).toLocaleDateString()}
-                      </p>
-                      {point.region && <p className="text-sm">Region: {point.region}</p>}
-                      <p className="text-sm">Symptoms: <span className="font-normal">{point.symptoms}</span></p>
-                      {point.isApproximate && (
-                        <p className="text-xs text-orange-600 italic">Location is an approximation for the region.</p>
-                      )}
-                    </div>
-                  </Popup>
-                </Marker>
-              ))}
-            </MapContainer>
-          )}
+          {/* The typeof window check is removed because OutbreakMap component is already dynamically imported with ssr: false */}
+          <MapContainer center={[9.145, 40.4897]} zoom={6} style={{ height: '100%', width: '100%' }} className="rounded-md">
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <MapEffectController points={mappedPoints} />
+            {mappedPoints.map(point => (
+              <Marker key={point.id} position={[point.latitude, point.longitude]}>
+                <Popup minWidth={200}>
+                  <div className="space-y-1">
+                    <h4 className={`font-bold text-md ${getDiseaseColorClass(point.disease)}`}>{point.disease}</h4>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(point.timestamp).toLocaleDateString()}
+                    </p>
+                    {point.region && <p className="text-sm">Region: {point.region}</p>}
+                    <p className="text-sm">Symptoms: <span className="font-normal">{point.symptoms}</span></p>
+                    {point.isApproximate && (
+                      <p className="text-xs text-orange-600 italic">Location is an approximation for the region.</p>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
         </div>
         {mappedPoints.length === 0 && reportsWithAnyLocation > 0 && (
              <div className="mt-2 p-3 text-center text-sm bg-yellow-100 border border-yellow-300 text-yellow-700 rounded-md flex items-center justify-center gap-2">
@@ -163,3 +167,4 @@ export function OutbreakMap({ reports }: OutbreakMapProps) {
     </Card>
   );
 }
+
