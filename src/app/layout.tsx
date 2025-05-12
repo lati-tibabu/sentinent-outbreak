@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
+import 'leaflet/dist/leaflet.css'; // Import Leaflet's CSS
 import { AuthProvider } from '@/contexts/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
 import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';

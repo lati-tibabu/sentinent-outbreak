@@ -4,17 +4,27 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/shared/Header';
-import { SimulatedMap } from '@/components/officer/SimulatedMap';
+// import { SimulatedMap } from '@/components/officer/SimulatedMap'; // Old map
 import { ReportFilters, type ReportFiltersState } from '@/components/officer/ReportFilters';
 import { ReportsTable } from '@/components/officer/ReportsTable';
 import { DailyReportSection } from '@/components/officer/DailyReportSection';
 import { AdminSettingsSection } from '@/components/officer/AdminSettingsSection';
-// import { useLocalStorage } from '@/hooks/useLocalStorage'; // No longer using for reports
 import type { Report } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from '@/hooks/use-toast';
+import dynamic from 'next/dynamic';
+
+// Dynamically import the OutbreakMap component as it uses Leaflet (client-side only)
+const OutbreakMap = dynamic(() => 
+  import('@/components/officer/OutbreakMap').then(mod => mod.OutbreakMap), 
+  { 
+    ssr: false,
+    loading: () => <Skeleton className="h-[450px] w-full" /> 
+  }
+);
+
 
 export default function OfficerPage() {
   const { user, isAuthenticated, isLoading: authIsLoading } = useAuth();
@@ -48,11 +58,11 @@ export default function OfficerPage() {
     } catch (error: any) {
       console.error("Error fetching reports:", error);
       toast({ variant: "destructive", title: "Error Fetching Reports", description: error.message });
-      setAllReports([]); // Set to empty on error
+      setAllReports([]); 
     } finally {
       setIsLoadingReports(false);
     }
-  }, [filters, toast]); // filters dependency ensures fetchReports is recreated if filter structure changes (not value)
+  }, [filters, toast]); 
 
   useEffect(() => {
     if (!authIsLoading && !isAuthenticated) {
@@ -62,9 +72,8 @@ export default function OfficerPage() {
     } else if (!authIsLoading && isAuthenticated && user?.role === 'officer') {
       fetchReports();
     }
-  }, [user, isAuthenticated, authIsLoading, router, fetchReports]); // fetchReports is stable due to useCallback
+  }, [user, isAuthenticated, authIsLoading, router, fetchReports]); 
 
-  // This effect will run when filters change to re-fetch data
   useEffect(() => {
     if (isAuthenticated && user?.role === 'officer') {
       fetchReports(filters);
@@ -72,9 +81,6 @@ export default function OfficerPage() {
   }, [filters, isAuthenticated, user, fetchReports]);
 
 
-  // filteredReports is now equivalent to allReports since filtering is done server-side by fetchReports.
-  // If client-side filtering is still desired on top of server-side, this memo can be re-enabled.
-  // For now, `allReports` IS the filtered list from the server.
   const filteredReports = allReports;
 
   if (authIsLoading || !isAuthenticated || user?.role !== 'officer') {
@@ -110,7 +116,7 @@ export default function OfficerPage() {
               <ScrollArea className="h-[calc(100vh-220px)]"> 
                 <div className="pr-4 space-y-6">
                   <ReportFilters filters={filters} setFilters={setFilters} />
-                  {isLoadingReports ? <Skeleton className="h-96 w-full" /> : <SimulatedMap reports={filteredReports} filters={filters} />}
+                  {isLoadingReports ? <Skeleton className="h-[450px] w-full" /> : <OutbreakMap reports={filteredReports} />}
                   {isLoadingReports ? <Skeleton className="h-96 w-full" /> : <ReportsTable reports={filteredReports} />}
                 </div>
               </ScrollArea>
@@ -127,7 +133,6 @@ export default function OfficerPage() {
             <TabsContent value="settings">
               <ScrollArea className="h-[calc(100vh-220px)]">
                 <div className="pr-4">
-                  {/* Pass fetchReports to AdminSettingsSection to trigger re-fetch after data manipulation */}
                   <AdminSettingsSection onDataChange={fetchReports} />
                 </div>
               </ScrollArea>
