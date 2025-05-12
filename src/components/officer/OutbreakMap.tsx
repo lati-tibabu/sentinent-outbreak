@@ -1,4 +1,3 @@
-
 "use client";
 import { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
@@ -9,6 +8,7 @@ import { regionCoordinates } from '@/lib/regionCoordinates';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
 
 // Fix for default Leaflet icon issue (paths not resolving correctly with Webpack/Next.js)
 // @ts-ignore
@@ -35,12 +35,12 @@ interface MappedPoint {
 }
 
 const diseaseColorMap: { [key: string]: string } = {
-  "Cholera": "text-red-500", 
-  "Malaria": "text-teal-500",    
-  "Measles": "text-orange-500",     
-  "Pneumonia": "text-yellow-500", 
-  "Typhoid Fever": "text-purple-500", 
-  "Default": "text-green-500",  
+  "Cholera": "text-red-500",
+  "Malaria": "text-teal-500",
+  "Measles": "text-orange-500",
+  "Pneumonia": "text-yellow-500",
+  "Typhoid Fever": "text-purple-500",
+  "Default": "text-green-500",
 };
 
 const getDiseaseColorClass = (disease: string) => {
@@ -65,7 +65,7 @@ function MapEffectController({ points }: { points: MappedPoint[] }) {
       }
     } else {
       // Default view for Ethiopia if no points
-      map.setView([9.145, 40.4897], 6); 
+      map.setView([9.145, 40.4897], 6);
     }
   }, [points, map]);
 
@@ -119,7 +119,13 @@ export function OutbreakMap({ reports }: OutbreakMapProps) {
       <CardContent>
         <div className="h-[450px] w-full bg-muted rounded-md border">
           {/* The typeof window check is removed because OutbreakMap component is already dynamically imported with ssr: false */}
-          <MapContainer center={[9.145, 40.4897]} zoom={6} style={{ height: '100%', width: '100%' }} className="rounded-md">
+          <MapContainer
+            placeholder={<Skeleton className="h-full w-full" />} // Added placeholder
+            center={[9.145, 40.4897]}
+            zoom={6}
+            style={{ height: '100%', width: '100%' }}
+            className="rounded-md"
+          >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -167,4 +173,3 @@ export function OutbreakMap({ reports }: OutbreakMapProps) {
     </Card>
   );
 }
-
