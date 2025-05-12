@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react"; // Added React and useMemo
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -16,7 +16,7 @@ import { MapPin, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Fix for default Leaflet icon issue (paths not resolving correctly with Webpack/Next.js)
+// Fix for default Leaflet icon issue
 // @ts-ignore
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -47,30 +47,29 @@ const diseaseColorMap: { [key: string]: string } = {
   Measles: "text-orange-500",
   Pneumonia: "text-yellow-500",
   "Typhoid Fever": "text-purple-500",
-  Default: "text-green-500", // Fallback color
+  Default: "text-green-500",
 };
 
 const getDiseaseColorClass = (disease: string) => {
   return diseaseColorMap[disease] || diseaseColorMap["Default"];
 };
 
-// Helper component to adjust map view dynamically based on points
 function MapEffectController({ points }: { points: MappedPoint[] }) {
   const map = useMap();
 
   useEffect(() => {
-    if (points && points.length > 0) {
+    if (map && points && points.length > 0) {
       const latLngs = points.map((p) => L.latLng(p.latitude, p.longitude));
       const bounds = L.latLngBounds(latLngs);
       if (bounds.isValid()) {
         map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
-      } else if (points.length === 1) {
+      } else if (points.length === 1) { // Single point
         map.setView([points[0].latitude, points[0].longitude], 10);
-      } else {
-        map.setView([9.145, 40.4897], 6); // Default to Ethiopia
+      } else { // Multiple points at the exact same location, or invalid bounds for other reasons
+         map.setView([points[0].latitude, points[0].longitude], 6); // Fallback to first point
       }
-    } else {
-      map.setView([9.145, 40.4897], 6); // Default to Ethiopia if no points
+    } else if (map) { // Map exists, but no points
+      map.setView([9.145, 40.4897], 6); // Default to Ethiopia
     }
   }, [points, map]);
 
@@ -78,21 +77,8 @@ function MapEffectController({ points }: { points: MappedPoint[] }) {
 }
 
 export function OutbreakMap({ reports }: OutbreakMapProps) {
-  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
-
-  // Effect for cleaning up the map instance on component unmount
-  useEffect(() => {
-    return () => {
-      if (mapInstance) {
-        mapInstance.remove();
-        setMapInstance(null); // Clear the instance from state
-      }
-    };
-  }, [mapInstance]);
-
-
-  const mappedPoints: MappedPoint[] = reports.reduce(
-    (acc: MappedPoint[], report) => {
+  const mappedPoints: MappedPoint[] = useMemo(() => 
+    reports.reduce((acc: MappedPoint[], report) => {
       if (
         report.location &&
         typeof report.location.latitude === "number" &&
@@ -122,16 +108,19 @@ export function OutbreakMap({ reports }: OutbreakMapProps) {
         });
       }
       return acc;
-    },
-    []
+    }, []),
+    [reports]
   );
 
-  const uniqueDiseasesInMap = Array.from(
-    new Set(mappedPoints.map((p) => p.disease))
+  const uniqueDiseasesInMap = useMemo(() =>
+    Array.from(new Set(mappedPoints.map((p) => p.disease))),
+    [mappedPoints]
   );
-  const reportsWithAnyLocation = reports.filter(
-    (r) => r.location || r.region
-  ).length;
+  
+  const reportsWithAnyLocation = useMemo(() =>
+    reports.filter((r) => r.location || (r.region && regionCoordinates[r.region])).length,
+    [reports]
+  );
 
   return (
     <Card className="shadow-lg">
@@ -150,7 +139,6 @@ export function OutbreakMap({ reports }: OutbreakMapProps) {
       <CardContent>
         <div className="h-[450px] w-full bg-muted rounded-md border">
           <MapContainer
-            whenCreated={setMapInstance} // Get map instance
             center={[9.145, 40.4897]}
             zoom={6}
             style={{ height: "100%", width: "100%" }}
@@ -203,9 +191,11 @@ export function OutbreakMap({ reports }: OutbreakMapProps) {
           </div>
         )}
         {mappedPoints.length === 0 && reports.length > 0 && reportsWithAnyLocation > 0 && (
+          // This case might occur if mappedPoints logic filters out all points even if reportsWithAnyLocation is > 0
+          // Or if mapping logic has an issue.
           <div className="mt-2 p-3 text-center text-sm bg-yellow-100 border border-yellow-300 text-yellow-700 rounded-md flex items-center justify-center gap-2">
             <AlertTriangle size={18} />
-            Some reports have location/region data, but could not be placed on the map (e.g., outside expected bounds or region not in lookup).
+            Reports have location/region data, but none could be placed on the map. Check console for potential data issues.
           </div>
         )}
         {uniqueDiseasesInMap.length > 0 && (

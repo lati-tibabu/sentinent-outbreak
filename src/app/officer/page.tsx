@@ -16,6 +16,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import dynamic from "next/dynamic";
+import { regionCoordinates } from "@/lib/regionCoordinates";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { MapPin } from "lucide-react";
+
 
 // Dynamically import the OutbreakMap component as it uses Leaflet (client-side only)
 const OutbreakMap = dynamic(
@@ -40,7 +44,7 @@ export default function OfficerPage() {
     date: undefined,
   });
 
-  const [renderMap, setRenderMap] = useState(false);
+  const [mapVisible, setMapVisible] = useState(false);
 
   const fetchReports = useCallback(
     async (currentFilters?: ReportFiltersState) => {
@@ -93,11 +97,17 @@ export default function OfficerPage() {
     }
   }, [filters, isAuthenticated, user, fetchReports]);
 
-  const filteredReports = allReports;
+  const filteredReports = allReports; // Assuming filtering logic is correct or allReports is already filtered by API
 
   useEffect(() => {
-    setRenderMap(filteredReports && filteredReports.length > 0);
-  }, [filteredReports]);
+    if (!isLoadingReports && filteredReports && filteredReports.length > 0) {
+      const hasLocationData = filteredReports.some(r => r.location || (r.region && regionCoordinates[r.region!]));
+      setMapVisible(hasLocationData);
+    } else if (!isLoadingReports) {
+      setMapVisible(false);
+    }
+  }, [isLoadingReports, filteredReports]);
+
 
   if (authIsLoading || !isAuthenticated || user?.role !== "officer") {
     return (
@@ -136,11 +146,26 @@ export default function OfficerPage() {
                 <ReportFilters filters={filters} setFilters={setFilters} />
                 {isLoadingReports ? (
                   <Skeleton className="h-[450px] w-full" />
-                ) : filteredReports ? (
-                  renderMap && filteredReports ? (
-                    <OutbreakMap reports={filteredReports} />
-                  ) : null
-                ) : null}
+                ) : mapVisible ? (
+                  <OutbreakMap reports={filteredReports} />
+                ) : (
+                  <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-xl"><MapPin /> Outbreak Map</CardTitle>
+                        <CardDescription>Geographical distribution of reported cases.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="h-[450px] w-full bg-muted rounded-md border flex items-center justify-center">
+                            <p className="text-muted-foreground p-4 text-center">
+                                {filteredReports && filteredReports.length > 0
+                                    ? "No reports have location data to display on the map."
+                                    : "No reports match the current filters, or no reports submitted yet."
+                                }
+                            </p>
+                        </div>
+                    </CardContent>
+                  </Card>
+                )}
                 {isLoadingReports ? (
                   <Skeleton className="h-96 w-full" />
                 ) : (
@@ -165,7 +190,7 @@ export default function OfficerPage() {
           <TabsContent value="settings">
             <ScrollArea className="h-[calc(100vh-220px)]">
               <div className="pr-4">
-                <AdminSettingsSection onDataChange={fetchReports} />
+                <AdminSettingsSection onDataChange={() => fetchReports(filters)} />
               </div>
             </ScrollArea>
           </TabsContent>
