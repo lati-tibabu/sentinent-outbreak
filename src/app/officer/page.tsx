@@ -1,3 +1,4 @@
+
 "use client";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -15,21 +16,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import dynamic from "next/dynamic";
-import { regionCoordinates } from "@/lib/regionCoordinates";
+// import dynamic from "next/dynamic"; // Removed as OutbreakMap is removed
+// import { regionCoordinates } from "@/lib/regionCoordinates"; // Removed as OutbreakMap is removed
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin } from "lucide-react";
+import { MapPin, Construction } from "lucide-react";
 
 
 // Dynamically import the OutbreakMap component as it uses Leaflet (client-side only)
-const OutbreakMap = dynamic(
-  () =>
-    import("@/components/officer/OutbreakMap").then((mod) => mod.OutbreakMap),
-  {
-    ssr: false,
-    loading: () => <Skeleton className="h-[450px] w-full" />,
-  }
-);
+// const OutbreakMap = dynamic( // Removed
+//   () =>
+//     import("@/components/officer/OutbreakMap").then((mod) => mod.OutbreakMap),
+//   {
+//     ssr: false,
+//     loading: () => <Skeleton className="h-[450px] w-full" />,
+//   }
+// );
 
 export default function OfficerPage() {
   const { user, isAuthenticated, isLoading: authIsLoading } = useAuth();
@@ -44,7 +45,7 @@ export default function OfficerPage() {
     date: undefined,
   });
 
-  const [mapVisible, setMapVisible] = useState(false);
+  // const [mapVisible, setMapVisible] = useState(false); // Removed as OutbreakMap is removed
 
   const fetchReports = useCallback(
     async (currentFilters?: ReportFiltersState) => {
@@ -99,14 +100,14 @@ export default function OfficerPage() {
 
   const filteredReports = allReports; // Assuming filtering logic is correct or allReports is already filtered by API
 
-  useEffect(() => {
-    if (!isLoadingReports && filteredReports && filteredReports.length > 0) {
-      const hasLocationData = filteredReports.some(r => r.location || (r.region && regionCoordinates[r.region!]));
-      setMapVisible(hasLocationData);
-    } else if (!isLoadingReports) {
-      setMapVisible(false);
-    }
-  }, [isLoadingReports, filteredReports]);
+  // useEffect(() => { // Removed as OutbreakMap is removed
+  //   if (!isLoadingReports && filteredReports && filteredReports.length > 0) {
+  //     const hasLocationData = filteredReports.some(r => r.location || (r.region && regionCoordinates[r.region!]));
+  //     setMapVisible(hasLocationData);
+  //   } else if (!isLoadingReports) {
+  //     setMapVisible(false);
+  //   }
+  // }, [isLoadingReports, filteredReports]);
 
 
   if (authIsLoading || !isAuthenticated || user?.role !== "officer") {
@@ -144,28 +145,24 @@ export default function OfficerPage() {
             <ScrollArea className="h-[calc(100vh-220px)]">
               <div className="pr-4 space-y-6">
                 <ReportFilters filters={filters} setFilters={setFilters} />
-                {isLoadingReports ? (
-                  <Skeleton className="h-[450px] w-full" />
-                ) : mapVisible ? (
-                  <OutbreakMap reports={filteredReports} />
-                ) : (
-                  <Card className="shadow-lg">
+                
+                <Card className="shadow-lg">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-xl"><MapPin /> Outbreak Map</CardTitle>
                         <CardDescription>Geographical distribution of reported cases.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="h-[450px] w-full bg-muted rounded-md border flex items-center justify-center">
+                        <div className="h-[450px] w-full bg-muted rounded-md border flex flex-col items-center justify-center">
+                            <Construction size={48} className="text-muted-foreground mb-4" />
                             <p className="text-muted-foreground p-4 text-center">
-                                {filteredReports && filteredReports.length > 0
-                                    ? "No reports have location data to display on the map."
-                                    : "No reports match the current filters, or no reports submitted yet."
-                                }
+                                The Outbreak Map feature is currently under maintenance or has been temporarily removed.
+                                <br />
+                                Report data continues to be available in the table below.
                             </p>
                         </div>
                     </CardContent>
                   </Card>
-                )}
+
                 {isLoadingReports ? (
                   <Skeleton className="h-96 w-full" />
                 ) : (
