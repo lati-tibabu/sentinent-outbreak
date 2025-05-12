@@ -1,3 +1,4 @@
+
 "use client";
 import { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
@@ -8,7 +9,7 @@ import { regionCoordinates } from '@/lib/regionCoordinates';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton'; // Import Skeleton
+import { Skeleton } from '@/components/ui/skeleton'; 
 
 // Fix for default Leaflet icon issue (paths not resolving correctly with Webpack/Next.js)
 // @ts-ignore
@@ -120,7 +121,7 @@ export function OutbreakMap({ reports }: OutbreakMapProps) {
         <div className="h-[450px] w-full bg-muted rounded-md border">
           {/* The typeof window check is removed because OutbreakMap component is already dynamically imported with ssr: false */}
           <MapContainer
-            placeholder={<Skeleton className="h-full w-full" />} // Added placeholder
+            // placeholder={<Skeleton className="h-full w-full" />} // Removed placeholder
             center={[9.145, 40.4897]}
             zoom={6}
             style={{ height: '100%', width: '100%' }}
